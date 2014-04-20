@@ -51,6 +51,8 @@
 #include <sys/utsname.h>
 #include <locale.h>
 
+#include "../deps/mysql/include/mysql.h"
+
 /* Our shared "common" objects */
 
 struct sharedObjectsStruct shared;
@@ -267,8 +269,58 @@ struct redisCommand redisCommandTable[] = {
     {"pfadd",pfaddCommand,-2,"wm",0,NULL,1,1,1,0,0},
     {"pfcount",pfcountCommand,-2,"w",0,NULL,1,1,1,0,0},
     {"pfmerge",pfmergeCommand,-2,"wm",0,NULL,1,-1,1,0,0},
-    {"pfdebug",pfdebugCommand,-3,"w",0,NULL,0,0,0,0,0}
+    {"pfdebug",pfdebugCommand,-3,"w",0,NULL,0,0,0,0,0},
+    {"mysql",mysqlCommand,2,"rw",0,NULL,0,0,0,0,0}
 };
+
+
+MYSQL *conn;
+void mysqlCommand(redisClient *c) {
+
+	char *host = "127.0.0.1";
+	char *username = "root";
+	char *password = "";
+	char *database = "doupang";
+
+	char *query = c->argv[1]->ptr;
+
+
+	conn = mysql_init(NULL);
+	if (conn == NULL) {
+		addReplyBulkCString(c, "mysql fail init");
+		return;
+	}
+
+	MYSQL *res = mysql_real_connect(conn, host, username, password, database, 3306, (char *)NULL, 0);
+	if (!res) {
+		addReplyBulkCString(c, "mysql fail connection");
+		return;
+	}
+
+	int r = mysql_query(conn, "select * from temp_table;");
+	/*if (!r) {
+		addReplyBulkLongLong(c, r);
+		return;
+	}*/
+
+	MYSQL_RES *_res = mysql_store_result(conn);
+	MYSQL_ROW *row;
+	int col_cnt = mysql_num_fields(_res);
+	int row_cnt = mysql_num_rows(_res);
+
+	addReplyMultiBulkLen(c, col_cnt * row_cnt);
+
+	if (_res) {
+		while ((row = mysql_fetch_row(_res))) {
+
+			for(unsigned int i=0; i < col_cnt; i++) {
+				addReplyBulkCString(c, row[i]);
+			}
+		}
+	}
+
+	mysql_close(conn);
+}
 
 /*============================ Utility functions ============================ */
 
