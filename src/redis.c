@@ -281,9 +281,7 @@ void mysqlCommand(redisClient *c) {
 	char *username = "root";
 	char *password = "";
 	char *database = "doupang";
-	char *query;
-
-	strtold(c->argv[0]->ptr, &query);
+	const char *query = sdscatsds(sdsempty(), c->argv[1]->ptr);
 
 	conn = mysql_init(NULL);
 	if (conn == NULL) {
@@ -297,11 +295,11 @@ void mysqlCommand(redisClient *c) {
 		return;
 	}
 
-	int r = mysql_query(conn, "select * from temp_table;");
-	/*if (!r) {
+	int r = mysql_query(conn, query);
+	if (r) {
 		addReplyBulkLongLong(c, r);
 		return;
-	}*/
+	}
 
 	MYSQL_RES *_res = mysql_store_result(conn);
 	MYSQL_ROW *row;
