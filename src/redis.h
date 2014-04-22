@@ -1220,8 +1220,8 @@ char *redisGitDirty(void);
 uint64_t redisBuildId(void);
 
 /* Commands prototypes */
-void mysqlCommand(redisClient *c);
 void mysqlqCommand(redisClient *c);
+void mysqlqsCommand(redisClient *c);
 void authCommand(redisClient *c);
 void pingCommand(redisClient *c);
 void echoCommand(redisClient *c);
