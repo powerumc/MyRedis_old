@@ -75,7 +75,11 @@ MYSQL *myredis_connect(redisClient *c) {
 	return mysql;
 }
 
-
+void myredis_disconnect(MYSQL *mysql) {
+	if (mysql) {
+		mysql_close(mysql);
+	}
+}
 
 MYSQL_RES *myredis_query(redisClient *c, MYSQL *mysql) {
 	robj *q = lookupKeyRead(c->db, c->argv[2]);

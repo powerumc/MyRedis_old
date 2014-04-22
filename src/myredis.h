@@ -24,6 +24,7 @@ typedef struct __myredis_conn {
 
 MYSQL *myredis_connect(redisClient *c);
 MYSQL_RES *myredis_query(redisClient *c, MYSQL *mysql);
+void myredis_disconnect(MYSQL *mysql);
 
 
 
