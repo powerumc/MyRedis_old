@@ -68,8 +68,7 @@ redis-cli.o: redis-cli.c fmacros.h version.h ../deps/hiredis/hiredis.h \
 redis.o: redis.c redis.h fmacros.h config.h ../deps/lua/src/lua.h \
   ../deps/lua/src/luaconf.h ae.h sds.h dict.h adlist.h zmalloc.h anet.h \
   ziplist.h intset.h version.h util.h rdb.h rio.h slowlog.h bio.h \
-  asciilogo.h \
-  ../deps/mysql/include/mysql.h
+  asciilogo.h
 release.o: release.c release.h version.h crc64.h
 replication.o: replication.c redis.h fmacros.h config.h \
   ../deps/lua/src/lua.h ../deps/lua/src/luaconf.h ae.h sds.h dict.h \
@@ -118,3 +117,4 @@ ziplist.o: ziplist.c zmalloc.h util.h sds.h ziplist.h endianconv.h \
   config.h redisassert.h
 zipmap.o: zipmap.c zmalloc.h endianconv.h config.h
 zmalloc.o: zmalloc.c config.h zmalloc.h
+myredis.o: ../deps/mysql/include/mysql.h myredis.h myredis.c
