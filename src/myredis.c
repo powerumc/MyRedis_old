@@ -127,3 +127,44 @@ robj *myredis_query_scalar(redisClient *c, MYSQL *mysql) {
 
 	return createStringObject(row[0], strlen(row[0]));
 }
+
+robj *lookupKey_no_expire(redisDb *db, robj *key) {
+    dictEntry *de = dictFind(db->dict,key->ptr);
+    if (de) {
+        robj *val = dictGetVal(de);
+        return val;
+    } else {
+        return NULL;
+    }
+}
+
+robj *lookupKeyRead_no_expire(redisDb *db, robj *key) {
+    robj *val;
+
+    val = lookupKey_no_expire(db,key);
+    if (val == NULL)
+        server.stat_keyspace_misses++;
+    else
+        server.stat_keyspace_hits++;
+    return val;
+}
+robj *lookupKeyReadOrReply_no_expire(redisClient *c, robj *key, robj *reply) {
+    robj *o = lookupKeyRead_no_expire(c->db, key);
+    if (!o) addReply(c,reply);
+    return o;
+}
+
+int getGenericCommand_no_exire(redisClient *c) {
+    robj *o;
+
+    if ((o = lookupKeyReadOrReply_no_expire(c,c->argv[1],shared.nullbulk)) == NULL)
+        return REDIS_OK;
+
+    if (o->type != REDIS_STRING) {
+        addReply(c,shared.wrongtypeerr);
+        return REDIS_ERR;
+    } else {
+        addReplyBulk(c,o);
+        return REDIS_OK;
+    }
+}

@@ -26,12 +26,8 @@ MYSQL *myredis_connect(redisClient *c);
 MYSQL_RES *myredis_query(redisClient *c, MYSQL *mysql);
 void myredis_disconnect(MYSQL *mysql);
 robj *myredis_query_scalar(redisClient *c, MYSQL *mysql);
-
-
-
-
-
-
+void getneCommand(redisClient *c);
+int getGenericCommand_no_exire(redisClient *c);
 
 
 #endif

@@ -271,8 +271,10 @@ struct redisCommand redisCommandTable[] = {
     {"pfcount",pfcountCommand,-2,"w",0,NULL,1,1,1,0,0},
     {"pfmerge",pfmergeCommand,-2,"wm",0,NULL,1,-1,1,0,0},
     {"pfdebug",pfdebugCommand,-3,"w",0,NULL,0,0,0,0,0},
+
     {"mysqlq",mysqlqCommand,3,"r",0,NULL,0,0,0,0,0},
-    {"mysqlqs",mysqlqsCommand ,4,"rw",0,NULL,0,0,0,0,0}
+    {"mysqlqs",mysqlqsCommand,-4,"rw",0,noPreloadGetKeys,1,1,1,0,0},
+    {"getne",getneCommand,2,"r",0,NULL,0,0,0,0,0}
 };
 
 MYSQL* conn;
@@ -285,15 +287,60 @@ void mysqlqCommand(redisClient *c) {
 	myredis_disconnect(mysql);
 }
 
+#ifndef REDIS_SET_NO_FLAGS
+#define REDIS_SET_NO_FLAGS 0
+#endif
+#ifndef REDIS_SET_NX
+#define REDIS_SET_NX (1<<0)     /* Set if key not exists. */
+#endif
+#ifndef REDIS_SET_XX
+#define REDIS_SET_XX (1<<1)     /* Set if key exists. */
+#endif
+
 void mysqlqsCommand(redisClient *c) {
+	robj *expire = NULL;
+	int unit = UNIT_SECONDS;
+	int flags = REDIS_SET_NO_FLAGS;
+
+	for (int j = 4; j < c->argc; j++) {
+		char *a = c->argv[j]->ptr;
+		robj *next = (j == c->argc-1) ? NULL : c->argv[j+1];
+
+		if ((a[0] == 'n' || a[0] == 'N') &&
+			(a[1] == 'x' || a[1] == 'X') && a[2] == '\0') {
+			flags |= REDIS_SET_NX;
+		} else if ((a[0] == 'x' || a[0] == 'X') &&
+				   (a[1] == 'x' || a[1] == 'X') && a[2] == '\0') {
+			flags |= REDIS_SET_XX;
+		} else if ((a[0] == 'e' || a[0] == 'E') &&
+				   (a[1] == 'x' || a[1] == 'X') && a[2] == '\0' && next) {
+			unit = UNIT_SECONDS;
+			expire = next;
+			j++;
+		} else if ((a[0] == 'p' || a[0] == 'P') &&
+				   (a[1] == 'x' || a[1] == 'X') && a[2] == '\0' && next) {
+			unit = UNIT_MILLISECONDS;
+			expire = next;
+			j++;
+		} else {
+			addReply(c,shared.syntaxerr);
+			return;
+		}
+	}
+
 	MYSQL *mysql = myredis_connect(c);
 	if (!mysql) return;
 
 	robj *res = myredis_query_scalar(c, mysql);
 
-	setGenericCommand(c, 0/* REDIS_SET_NO_FLAGS */,c->argv[3],res,NULL,UNIT_SECONDS,NULL,NULL);
+	//c->argv[2] = tryObjectEncoding(c->argv[2]);
+	setGenericCommand(c,flags,c->argv[3],res,expire,unit,NULL,NULL);
 
 	myredis_disconnect(mysql);
+}
+
+void getneCommand(redisClient *c) {
+	getGenericCommand_no_exire(c);
 }
 
 /*============================ Utility functions ============================ */
