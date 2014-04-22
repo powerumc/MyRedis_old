@@ -30,6 +30,7 @@
 #include "redis.h"
 #include "slowlog.h"
 #include "bio.h"
+#include "myredis.h"
 
 #include <time.h>
 #include <signal.h>
@@ -270,54 +271,16 @@ struct redisCommand redisCommandTable[] = {
     {"pfcount",pfcountCommand,-2,"w",0,NULL,1,1,1,0,0},
     {"pfmerge",pfmergeCommand,-2,"wm",0,NULL,1,-1,1,0,0},
     {"pfdebug",pfdebugCommand,-3,"w",0,NULL,0,0,0,0,0},
-    {"mysql",mysqlCommand,2,"rw",0,NULL,0,0,0,0,0}
+    {"mysqlq",mysqlqCommand,3,"rw",0,NULL,0,0,0,0,0}
 };
 
-
-MYSQL *conn;
-void mysqlCommand(redisClient *c) {
-
-	char *host = "127.0.0.1";
-	char *username = "root";
-	char *password = "";
-	char *database = "doupang";
-	const char *query = sdscatsds(sdsempty(), c->argv[1]->ptr);
-
-	conn = mysql_init(NULL);
-	if (conn == NULL) {
-		addReplyBulkCString(c, "mysql fail init");
+MYSQL* conn;
+void mysqlqCommand(redisClient *c) {
+	MYSQL *mysql = myredis_connect(c);
+	if (!mysql)
 		return;
-	}
 
-	MYSQL *res = mysql_real_connect(conn, host, username, password, database, 3306, (char *)NULL, 0);
-	if (!res) {
-		addReplyBulkCString(c, "mysql fail connection");
-		return;
-	}
-
-	int r = mysql_query(conn, query);
-	if (r) {
-		addReplyBulkLongLong(c, r);
-		return;
-	}
-
-	MYSQL_RES *_res = mysql_store_result(conn);
-	MYSQL_ROW *row;
-	int col_cnt = mysql_num_fields(_res);
-	int row_cnt = mysql_num_rows(_res);
-
-	addReplyMultiBulkLen(c, col_cnt * row_cnt);
-
-	if (_res) {
-		while ((row = mysql_fetch_row(_res))) {
-
-			for(unsigned int i=0; i < col_cnt; i++) {
-				addReplyBulkCString(c, row[i]);
-			}
-		}
-	}
-
-	mysql_close(conn);
+	MYSQL_RES *res = myredis_query(c, mysql);
 }
 
 /*============================ Utility functions ============================ */
