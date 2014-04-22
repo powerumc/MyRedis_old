@@ -280,7 +280,9 @@ void mysqlqCommand(redisClient *c) {
 	if (!mysql)
 		return;
 
-	MYSQL_RES *res = myredis_query(c, mysql);
+	myredis_query(c, mysql);
+
+	myredis_disconnect(mysql);
 }
 
 /*============================ Utility functions ============================ */
