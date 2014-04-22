@@ -81,6 +81,16 @@ void myredis_disconnect(MYSQL *mysql) {
 	}
 }
 
+MYSQL_RES *myredis_query_exec(redisClient *c, MYSQL *mysql, robj *q) {
+	int s = mysql_query(mysql, (const char *)q->ptr);
+	if (s) {
+		addReplyError(c, "mysql: query failed");
+		return NULL;
+	}
+
+	return mysql_store_result(mysql);
+}
+
 MYSQL_RES *myredis_query(redisClient *c, MYSQL *mysql) {
 	robj *q = lookupKeyRead(c->db, c->argv[2]);
 	if (!q) {
@@ -88,14 +98,7 @@ MYSQL_RES *myredis_query(redisClient *c, MYSQL *mysql) {
 		return NULL;
 	}
 
-	int s = mysql_query(mysql, (const char *)q->ptr);
-	if (s) {
-		addReplyError(c, "mysql: query failed");
-		return NULL;
-	}
-
-	MYSQL_RES *res = mysql_store_result(mysql);
-	if (!res) return NULL;
+	MYSQL_RES *res = myredis_query_exec(c, mysql, q);
 
 	int r_len = mysql_num_rows(res);
 	int c_len = mysql_num_fields(res);
@@ -110,4 +113,17 @@ MYSQL_RES *myredis_query(redisClient *c, MYSQL *mysql) {
 	}
 
 	return res;
+}
+
+robj *myredis_query_scalar(redisClient *c, MYSQL *mysql) {
+	robj *q = lookupKeyRead(c->db, c->argv[2]);
+	if (!q) {
+		addReplyError(c, "mysql: query key could not found.");
+		return NULL;
+	}
+
+	MYSQL_RES *res = myredis_query_exec(c, mysql, q);
+	MYSQL_ROW row  = mysql_fetch_row(res);
+
+	return createStringObject(row[0], strlen(row[0]));
 }

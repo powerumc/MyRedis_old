@@ -271,16 +271,27 @@ struct redisCommand redisCommandTable[] = {
     {"pfcount",pfcountCommand,-2,"w",0,NULL,1,1,1,0,0},
     {"pfmerge",pfmergeCommand,-2,"wm",0,NULL,1,-1,1,0,0},
     {"pfdebug",pfdebugCommand,-3,"w",0,NULL,0,0,0,0,0},
-    {"mysqlq",mysqlqCommand,3,"rw",0,NULL,0,0,0,0,0}
+    {"mysqlq",mysqlqCommand,3,"r",0,NULL,0,0,0,0,0},
+    {"mysqlqs",mysqlqsCommand ,4,"rw",0,NULL,0,0,0,0,0}
 };
 
 MYSQL* conn;
 void mysqlqCommand(redisClient *c) {
 	MYSQL *mysql = myredis_connect(c);
-	if (!mysql)
-		return;
+	if (!mysql) return;
 
 	myredis_query(c, mysql);
+
+	myredis_disconnect(mysql);
+}
+
+void mysqlqsCommand(redisClient *c) {
+	MYSQL *mysql = myredis_connect(c);
+	if (!mysql) return;
+
+	robj *res = myredis_query_scalar(c, mysql);
+
+	setGenericCommand(c, 0/* REDIS_SET_NO_FLAGS */,c->argv[3],res,NULL,UNIT_SECONDS,NULL,NULL);
 
 	myredis_disconnect(mysql);
 }
