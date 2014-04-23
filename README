@@ -1,3 +1,49 @@
+## MyRedis
+
+MyRedis supports mysq, event expiring and etc...
+
+
+### Setup database
+```
+> SET db.host "localhost"
+> SET db.user "root"
+> SET db.passwd "!@#$%"
+> SET db.db "doupang"
+```
+
+
+### Setup query
+```
+> SET q1 "SELECT * FROM temp_table"
+```
+
+### Execute Query
+```
+> MYSQLQ db q1
+1) "1"
+2) "Junil Um"
+3) "25"
+4) "2"
+5) "Coupang"
+6) "3"
+7) "3"
+8) "POWERUMC"
+9) "35"
+```
+
+### Execute Query Scalar and Store Result
+```
+> SET q2 "SELECT COUNT(*) FROM temp_table"
+> MYSQLSQ db q2 result
+
+> GET result
+"3"
+```
+
+
+
+## This is original readme of redis
+
 Where to find complete Redis documentation?
 -------------------------------------------
 
