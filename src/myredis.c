@@ -168,3 +168,78 @@ int getGenericCommand_no_exire(redisClient *c) {
         return REDIS_OK;
     }
 }
+
+
+void notifyKeyspaceExpiringEvent(int type, char *event, robj *key, robj *val, int dbid) {
+    sds chan;
+    robj *chanobj, *eventobj;
+    int len = -1;
+    char buf[24];
+
+    /* If notifications for this class of events are off, return ASAP. */
+    if (!(server.notify_keyspace_events & type)) return;
+
+    eventobj = createStringObject(event,strlen(event));
+
+    if (server.notify_keyspace_events & REDIS_NOTIFY_KEYEVENT) {
+        chan = sdsnewlen("__keyevent@",11);
+        if (len == -1) len = ll2string(buf,sizeof(buf),dbid);
+        chan = sdscatlen(chan, buf, len);
+        chan = sdscatlen(chan, "__:", 3);
+        chan = sdscatsds(chan, eventobj->ptr);
+        chanobj = createObject(REDIS_STRING, chan);
+        pubsubPublishMessageKeyValue(chanobj, key, val);
+        decrRefCount(chanobj);
+    }
+    decrRefCount(eventobj);
+}
+
+int pubsubPublishMessageKeyValue(robj *channel, robj *key, robj *val) {
+	int receivers = 0;
+	struct dictEntry *de;
+	listNode *ln;
+	listIter li;
+
+	/* Send to clients listening for that channel */
+	de = dictFind(server.pubsub_channels,channel);
+	if (de) {
+		list *list = dictGetVal(de);
+		listNode *ln;
+		listIter li;
+
+		listRewind(list,&li);
+		while ((ln = listNext(&li)) != NULL) {
+			redisClient *c = ln->value;
+
+			addReply(c,shared.mbulkhdr[3]);
+			addReply(c,shared.messagebulk);
+			addReplyBulk(c,channel);
+			addReplyBulk(c,key);
+			addReplyBulk(c,val);
+			receivers++;
+		}
+	}
+	/* Send to clients listening to matching channels */
+	if (listLength(server.pubsub_patterns)) {
+		listRewind(server.pubsub_patterns,&li);
+		channel = getDecodedObject(channel);
+		while ((ln = listNext(&li)) != NULL) {
+			pubsubPattern *pat = ln->value;
+
+			if (stringmatchlen((char*)pat->pattern->ptr,
+								sdslen(pat->pattern->ptr),
+								(char*)channel->ptr,
+								sdslen(channel->ptr),0)) {
+				addReply(pat->client,shared.mbulkhdr[4]);
+				addReply(pat->client,shared.pmessagebulk);
+				addReplyBulk(pat->client,pat->pattern);
+				addReplyBulk(pat->client,channel);
+				addReplyBulk(pat->client,key);
+				addReplyBulk(pat->client,val);
+				receivers++;
+			}
+		}
+		decrRefCount(channel);
+	}
+	return receivers;
+}

@@ -732,6 +732,13 @@ int activeExpireCycleTryExpire(redisDb *db, struct dictEntry *de, long long now)
         sds key = dictGetKey(de);
         robj *keyobj = createStringObject(key,sdslen(key));
 
+        // add new feature that notify value of key when key expiring
+        dictEntry *de = dictFind(db->dict,keyobj->ptr);
+        if (de) {
+            robj *val = dictGetVal(de);
+            notifyKeyspaceExpiringEvent(REDIS_NOTIFY_EXPIRED, "expiring",keyobj,val,db->id);
+        }
+
         propagateExpire(db,keyobj);
         dbDelete(db,keyobj);
         notifyKeyspaceEvent(REDIS_NOTIFY_EXPIRED,
