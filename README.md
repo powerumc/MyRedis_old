@@ -1,9 +1,9 @@
-## MyRedis
+# MyRedis
 
 MyRedis supports mysql, event expiring and etc...
 
 
-### Setup database
+### Setup Database
 ```
 > SET db.host "localhost"
 > SET db.user "root"
@@ -12,7 +12,7 @@ MyRedis supports mysql, event expiring and etc...
 ```
 
 
-### Setup query
+### Setup Query
 ```
 > SET q1 "SELECT * FROM temp_table"
 ```
@@ -42,7 +42,34 @@ MyRedis supports mysql, event expiring and etc...
 
 
 
-## This is original readme of redis
+### Expiring Key Event
+
+Expiring key event can retrieve key and value.
+
+```
+> config set notify-keyspace-events KEA
+> PSUBSCRIBE '__key*__:expiring'
+```
+
+When keys expiring before expired.
+
+```
+SET mykey "you can get key and value" ex 3
+```
+
+3 seconds past. Subscribed mykey is
+
+```
+1) "pmessage"
+2) "__key*__:expiring"
+3) "__keyevent@0__:expiring"
+4) "mykey"
+"you can get key and value"                    <<< Oh my god.
+```
+
+
+
+# This is original readme of redis
 
 Where to find complete Redis documentation?
 -------------------------------------------
