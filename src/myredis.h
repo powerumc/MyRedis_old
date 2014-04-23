@@ -28,6 +28,8 @@ void myredis_disconnect(MYSQL *mysql);
 robj *myredis_query_scalar(redisClient *c, MYSQL *mysql);
 void getneCommand(redisClient *c);
 int getGenericCommand_no_exire(redisClient *c);
+void notifyKeyspaceExpiringEvent(int type, char *event, robj *key, robj *val, int dbid);
+int pubsubPublishMessageKeyValue(robj *channel, robj *key, robj *val);
 
 
 #endif
