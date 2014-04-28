@@ -1,5 +1,74 @@
 #include "myredis.h"
 
+#ifndef REDIS_SET_NO_FLAGS
+#define REDIS_SET_NO_FLAGS 0
+#endif
+#ifndef REDIS_SET_NX
+#define REDIS_SET_NX (1<<0)     /* Set if key not exists. */
+#endif
+#ifndef REDIS_SET_XX
+#define REDIS_SET_XX (1<<1)     /* Set if key exists. */
+#endif
+
+MYSQL* conn;
+void mysqlqCommand(redisClient *c) {
+	MYSQL *mysql = myredis_connect(c);
+	if (!mysql) return;
+
+	if (c->argc == 3)
+		myredis_query(c, mysql);
+	else if (c->argc > 3)
+		mysqlqsCommand(c);
+
+	myredis_disconnect(mysql);
+}
+
+void mysqlqsCommand(redisClient *c) {
+	robj *expire = NULL;
+	int unit = UNIT_SECONDS;
+	int flags = REDIS_SET_NO_FLAGS;
+
+	for (int j = 4; j < c->argc; j++) {
+		char *a = c->argv[j]->ptr;
+		robj *next = (j == c->argc-1) ? NULL : c->argv[j+1];
+
+		if ((a[0] == 'n' || a[0] == 'N') &&
+			(a[1] == 'x' || a[1] == 'X') && a[2] == '\0') {
+			flags |= REDIS_SET_NX;
+		} else if ((a[0] == 'x' || a[0] == 'X') &&
+				   (a[1] == 'x' || a[1] == 'X') && a[2] == '\0') {
+			flags |= REDIS_SET_XX;
+		} else if ((a[0] == 'e' || a[0] == 'E') &&
+				   (a[1] == 'x' || a[1] == 'X') && a[2] == '\0' && next) {
+			unit = UNIT_SECONDS;
+			expire = next;
+			j++;
+		} else if ((a[0] == 'p' || a[0] == 'P') &&
+				   (a[1] == 'x' || a[1] == 'X') && a[2] == '\0' && next) {
+			unit = UNIT_MILLISECONDS;
+			expire = next;
+			j++;
+		} else {
+			addReply(c,shared.syntaxerr);
+			return;
+		}
+	}
+
+	MYSQL *mysql = myredis_connect(c);
+	if (!mysql) return;
+
+	robj *res = myredis_query_scalar(c, mysql);
+
+	//c->argv[2] = tryObjectEncoding(c->argv[2]);
+	setGenericCommand(c,flags,c->argv[3],res,expire,unit,NULL,NULL);
+
+	myredis_disconnect(mysql);
+}
+
+void getneCommand(redisClient *c) {
+	getGenericCommand_no_exire(c);
+}
+
 char* itoa(int val, int base){
 
 	static char buf[32] = {0};
