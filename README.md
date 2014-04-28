@@ -34,7 +34,7 @@ MyRedis supports mysql, event expiring and etc...
 ### Execute Query Scalar and Store Result
 ```
 > SET q2 "SELECT COUNT(*) FROM temp_table"
-> MYSQLSQ db q2 result
+> MYSQLQ db q2 result
 
 > GET result
 "3"
