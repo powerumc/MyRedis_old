@@ -280,7 +280,7 @@ int pubsubPublishMessageKeyValue(robj *channel, robj *key, robj *val) {
 		while ((ln = listNext(&li)) != NULL) {
 			redisClient *c = ln->value;
 
-			addReply(c,shared.mbulkhdr[3]);
+			addReply(c,shared.mbulkhdr[4]);
 			addReply(c,shared.messagebulk);
 			addReplyBulk(c,channel);
 			addReplyBulk(c,key);
@@ -299,7 +299,7 @@ int pubsubPublishMessageKeyValue(robj *channel, robj *key, robj *val) {
 								sdslen(pat->pattern->ptr),
 								(char*)channel->ptr,
 								sdslen(channel->ptr),0)) {
-				addReply(pat->client,shared.mbulkhdr[4]);
+				addReply(pat->client,shared.mbulkhdr[5]);
 				addReply(pat->client,shared.pmessagebulk);
 				addReplyBulk(pat->client,pat->pattern);
 				addReplyBulk(pat->client,channel);
