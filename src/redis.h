@@ -1221,7 +1221,6 @@ uint64_t redisBuildId(void);
 
 /* Commands prototypes */
 void mysqlqCommand(redisClient *c);
-void mysqlqsCommand(redisClient *c);
 void authCommand(redisClient *c);
 void pingCommand(redisClient *c);
 void echoCommand(redisClient *c);

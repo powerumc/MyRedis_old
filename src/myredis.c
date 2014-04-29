@@ -18,12 +18,12 @@ void mysqlqCommand(redisClient *c) {
 	if (c->argc == 3)
 		myredis_query(c, mysql);
 	else if (c->argc > 3)
-		mysqlqsCommand(c);
+		mysqlqsCommand(c, mysql);
 
 	myredis_disconnect(mysql);
 }
 
-void mysqlqsCommand(redisClient *c) {
+void mysqlqsCommand(redisClient *c, MYSQL* mysql) {
 	robj *expire = NULL;
 	int unit = UNIT_SECONDS;
 	int flags = REDIS_SET_NO_FLAGS;
@@ -54,15 +54,13 @@ void mysqlqsCommand(redisClient *c) {
 		}
 	}
 
-	MYSQL *mysql = myredis_connect(c);
 	if (!mysql) return;
 
 	robj *res = myredis_query_scalar(c, mysql);
-
-	//c->argv[2] = tryObjectEncoding(c->argv[2]);
-	setGenericCommand(c,flags,c->argv[3],res,expire,unit,NULL,NULL);
-
-	myredis_disconnect(mysql);
+	if (res) {
+		c->argv[2] = tryObjectEncoding(c->argv[2]);
+		setGenericCommand(c,flags,c->argv[3],res,expire,unit,NULL,NULL);
+	}
 }
 
 void getneCommand(redisClient *c) {
@@ -168,6 +166,8 @@ MYSQL_RES *myredis_query(redisClient *c, MYSQL *mysql) {
 	}
 
 	MYSQL_RES *res = myredis_query_exec(c, mysql, q);
+	if (!res)
+		return NULL;
 
 	int r_len = mysql_num_rows(res);
 	int c_len = mysql_num_fields(res);
@@ -192,6 +192,12 @@ robj *myredis_query_scalar(redisClient *c, MYSQL *mysql) {
 	}
 
 	MYSQL_RES *res = myredis_query_exec(c, mysql, q);
+	if (!res)
+		return NULL;
+
+	if (res->row_count == 0)
+		return createStringObject(REDIS_STRING, (void *)NULL);
+
 	MYSQL_ROW row  = mysql_fetch_row(res);
 
 	return createStringObject(row[0], strlen(row[0]));
