@@ -664,20 +664,30 @@ void updateDictResizePolicy(void) {
 int activeExpireCycleTryExpire(redisDb *db, struct dictEntry *de, long long now) {
     long long t = dictGetSignedIntegerVal(de);
     if (now > t) {
+
         sds key = dictGetKey(de);
         robj *keyobj = createStringObject(key,sdslen(key));
-
-        // add new feature that notify value of key when key expiring
         dictEntry *de = dictFind(db->dict,keyobj->ptr);
         if (de) {
             robj *val = dictGetVal(de);
-            notifyKeyspaceExpiringEvent(REDIS_NOTIFY_EXPIRED, "expiring",keyobj,val,db->id);
+            notifyKeyspaceExpiringEvent(REDIS_NOTIFY_EXPIRING, "expiring",keyobj,val,db->id);
         }
+
+
+        /*
+        sds key_cb = sdscat(key, ".callback");
+		robj *keyobj_cb = createStringObject(key_cb, strlen(key_cb));
+		dictEntry *de_cb = dictFind(db->dict,keyobj_cb->ptr);
+		if (de_cb) {
+			robj *val = dictGetVal(de_cb);
+			notifyKeyspaceExpiringEvent(REDIS_NOTIFY_EXPIRING_CALLBACK, "expiring.callback",keyobj_cb,val,db->id);
+		}
+		*/
+
 
         propagateExpire(db,keyobj);
         dbDelete(db,keyobj);
-        notifyKeyspaceEvent(REDIS_NOTIFY_EXPIRED,
-            "expired",keyobj,db->id);
+        notifyKeyspaceEvent(REDIS_NOTIFY_EXPIRED,"expired",keyobj,db->id);
         decrRefCount(keyobj);
         server.stat_expiredkeys++;
         return 1;

@@ -12,6 +12,7 @@
 
 MYSQL* conn;
 void mysqlqCommand(redisClient *c) {
+
 	MYSQL *mysql = myredis_connect(c);
 	if (!mysql) return;
 
@@ -21,6 +22,7 @@ void mysqlqCommand(redisClient *c) {
 		mysqlqsCommand(c, mysql);
 
 	myredis_disconnect(mysql);
+
 }
 
 void mysqlqsCommand(redisClient *c, MYSQL* mysql) {
@@ -75,6 +77,14 @@ char* itoa(int val, int base){
 	for(; val && i ; --i, val /= base)
 		buf[i] = "0123456789abcdef"[val % base];
 	return &buf[i+1];
+}
+
+char *myredis_strcat(const char *str, const char *pfix) {
+	char k[strlen(str) + 1];
+	strcpy(k, str);
+	char *ptr = strcat(k, pfix);
+
+	return ptr;
 }
 
 robj *myredis_lookupKeyRead(redisClient *c, robj *key, const char *pfix) {
@@ -274,6 +284,7 @@ int pubsubPublishMessageKeyValue(robj *channel, robj *key, robj *val) {
 	struct dictEntry *de;
 	listNode *ln;
 	listIter li;
+	int fd, iscb = 0;
 
 	/* Send to clients listening for that channel */
 	de = dictFind(server.pubsub_channels,channel);
@@ -316,5 +327,6 @@ int pubsubPublishMessageKeyValue(robj *channel, robj *key, robj *val) {
 		}
 		decrRefCount(channel);
 	}
+
 	return receivers;
 }

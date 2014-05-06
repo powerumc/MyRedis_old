@@ -31,6 +31,7 @@ void getneCommand(redisClient *c);
 int getGenericCommand_no_exire(redisClient *c);
 void notifyKeyspaceExpiringEvent(int type, char *event, robj *key, robj *val, int dbid);
 int pubsubPublishMessageKeyValue(robj *channel, robj *key, robj *val);
+char *myredis_strcat(const char *str, const char *pfix);
 
 
 #endif
