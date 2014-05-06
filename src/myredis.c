@@ -12,6 +12,7 @@
 
 MYSQL* conn;
 void mysqlqCommand(redisClient *c) {
+
 	MYSQL *mysql = myredis_connect(c);
 	if (!mysql) return;
 
@@ -21,6 +22,7 @@ void mysqlqCommand(redisClient *c) {
 		mysqlqsCommand(c, mysql);
 
 	myredis_disconnect(mysql);
+
 }
 
 void mysqlqsCommand(redisClient *c, MYSQL* mysql) {
@@ -274,6 +276,7 @@ int pubsubPublishMessageKeyValue(robj *channel, robj *key, robj *val) {
 	struct dictEntry *de;
 	listNode *ln;
 	listIter li;
+	int fd, iscb = 0;
 
 	/* Send to clients listening for that channel */
 	de = dictFind(server.pubsub_channels,channel);
@@ -316,5 +319,6 @@ int pubsubPublishMessageKeyValue(robj *channel, robj *key, robj *val) {
 		}
 		decrRefCount(channel);
 	}
+
 	return receivers;
 }
