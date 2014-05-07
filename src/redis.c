@@ -667,12 +667,19 @@ int activeExpireCycleTryExpire(redisDb *db, struct dictEntry *de, long long now)
 
         sds key = dictGetKey(de);
         robj *keyobj = createStringObject(key,sdslen(key));
+<<<<<<< HEAD
+=======
+        robj *keyobj_cb = createStringObject("a.callback", strlen("a.callback"));
+
+        // add new feature that notify value of key when key expiring
+>>>>>>> aedb04acd03bb6e2aa49c705501e3f634caaacd4
         dictEntry *de = dictFind(db->dict,keyobj->ptr);
         if (de) {
             robj *val = dictGetVal(de);
             notifyKeyspaceExpiringEvent(REDIS_NOTIFY_EXPIRING, "expiring",keyobj,val,db->id);
         }
 
+<<<<<<< HEAD
 
         /*
         sds key_cb = sdscat(key, ".callback");
@@ -683,6 +690,13 @@ int activeExpireCycleTryExpire(redisDb *db, struct dictEntry *de, long long now)
 			notifyKeyspaceExpiringEvent(REDIS_NOTIFY_EXPIRING_CALLBACK, "expiring.callback",keyobj_cb,val,db->id);
 		}
 		*/
+=======
+        dictEntry *de_cb = dictFind(db->dict,keyobj_cb->ptr);
+		if (de_cb) {
+			robj *val = dictGetVal(de_cb);
+			notifyKeyspaceExpiringEvent(REDIS_NOTIFY_EXPIRED, "expiring.callback",keyobj_cb,val,db->id);
+		}
+>>>>>>> aedb04acd03bb6e2aa49c705501e3f634caaacd4
 
 
         propagateExpire(db,keyobj);
